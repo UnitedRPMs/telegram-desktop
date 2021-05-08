@@ -9,7 +9,7 @@
 %global launcher telegramdesktop
 
 # tg_owt
-%global commit0 a19877363082da634a3c851a4698376504d2eaee
+%global commit0 18cb4cd9bb4c2f5f5f5e760ec808f74c302bc1bf
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 %global gver git%{shortcommit0}
 
@@ -23,7 +23,7 @@
 
 
 Name: telegram-desktop
-Version: 2.6.1
+Version: 2.7.4
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -37,6 +37,7 @@ Source3: https://chromium.googlesource.com/libyuv/libyuv.git/+archive/%{commit2}
 
 Patch: 0002-tg_owt-fix-name-confliction.patch
 Patch1: 0001-use-bundled-ranged-exptected-gsl.patch
+Patch2: fix-webview-includes.patch
 
 ExclusiveArch: x86_64
 
@@ -95,6 +96,8 @@ BuildRequires: pkgconfig(libpulse)
 BuildRequires: pkgconfig(protobuf)
 BuildRequires: pkgconfig(x11)
 BuildRequires: pkgconfig(xtst)
+BuildRequires: pkgconfig(glibmm-2.4)
+BuildRequires: pkgconfig(webkit2gtk-4.0)
 
 BuildRequires: yasm
 
@@ -121,6 +124,7 @@ business messaging needs.
 %prep
 %setup -n tdesktop-%{version}-full -a1
 %patch1 -p2 
+%patch2 -p1 
 
 echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
 
@@ -151,7 +155,7 @@ tar -xf %{S:3} -C %{_builddir}/Libraries/tg_owt/src/third_party/libyuv
     -DTG_OWT_PACKAGED_BUILD=TRUE
  
 
-  %ninja_build -C out/Release
+  %ninja_build -C out/Release -j2
 popd
 
 # Turns out we're allowed to use the official API key that telegram uses for their snap builds:
@@ -179,10 +183,10 @@ popd
 	-Wno-unknown-warning-option ..
 	popd
 
-    %make_build -C build  
+    %make_build -C build   -j2
 
 %install
-    %make_install -C build 
+    %make_install -C build  -j2
 
 %check
 appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/%{launcher}.appdata.xml
@@ -197,5 +201,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_metainfodir}/%{launcher}.appdata.xml
 
 %changelog
+
+* Fri May 07 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 2.7.4-7
+- Updated to 2.7.4
+
 * Sun Feb 28 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 2.6.1-7
 - Inital build
