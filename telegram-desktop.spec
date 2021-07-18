@@ -8,22 +8,10 @@
 %global appname tdesktop
 %global launcher telegramdesktop
 
-# tg_owt
-%global commit0 18cb4cd9bb4c2f5f5f5e760ec808f74c302bc1bf
-%global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
-%global gver git%{shortcommit0}
-
-# libvpx
-%global commit1 ebefb90b75f07ea5ab06d6b2a5ea5355c843d266
-%global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
-
-# libyuv
-%global commit2 c41eabe3d4e1c30f8cb1c5f8660583bf168d426a
-%global shortcommit2 %(c=%{commit2}; echo ${c:0:7})
 
 
 Name: telegram-desktop
-Version: 2.7.4
+Version: 2.8.4
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -31,14 +19,7 @@ URL: https://github.com/telegramdesktop/%{appname}
 Summary: Telegram Desktop official messaging app
 Source0: https://github.com/telegramdesktop/tdesktop/releases/download/v%{version}/tdesktop-%{version}-full.tar.gz
 
-Source1: https://github.com/desktop-app/tg_owt/archive/%{commit0}/%{name}-%{shortcommit0}.tar.gz
-Source2: https://chromium.googlesource.com/webm/libvpx.git/+archive/%{commit1}.tar.gz#/libvpx-%{shortcommit1}.tar.gz
-Source3: https://chromium.googlesource.com/libyuv/libyuv.git/+archive/%{commit2}.tar.gz#/libyuv-%{shortcommit2}.tar.gz
-
-Patch: 0002-tg_owt-fix-name-confliction.patch
-Patch1: 0001-use-bundled-ranged-exptected-gsl.patch
-Patch2: fix-webview-includes.patch
-
+Patch2:	fix-gcc11-assert.patch
 ExclusiveArch: x86_64
 
 BuildRequires: cmake(Microsoft.GSL)
@@ -87,9 +68,11 @@ BuildRequires: pkgconfig(Qt5Svg)
 BuildRequires: qt5-qtbase-static
 BuildRequires: libjpeg-turbo-devel 
 BuildRequires: kf5-kwayland-devel
-#BuildRequires: tg_owt-devel
+BuildRequires: tg_owt-devel
 BuildRequires: xcb-util-keysyms-devel
-
+BuildRequires: pipewire-devel
+BuildRequires: rlottie-devel
+BuildRequires: rnnoise-devel
 BuildRequires: pkgconfig(alsa)
 BuildRequires: ffmpeg-devel
 BuildRequires: pkgconfig(libpulse)
@@ -98,6 +81,7 @@ BuildRequires: pkgconfig(x11)
 BuildRequires: pkgconfig(xtst)
 BuildRequires: pkgconfig(glibmm-2.4)
 BuildRequires: pkgconfig(webkit2gtk-4.0)
+BuildRequires: extra-cmake-modules
 
 BuildRequires: yasm
 
@@ -122,71 +106,48 @@ like SMS and email combined — and can take care of all your personal or
 business messaging needs.
 
 %prep
-%setup -n tdesktop-%{version}-full -a1
-%patch1 -p2 
-%patch2 -p1 
+%setup -n tdesktop-%{version}-full 
+%patch2 -p1 -d Telegram/lib_webview/
 
 echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
+echo "find_package(X11 REQUIRED COMPONENTS Xcomposite Xdamage Xext Xfixes Xrender Xrandr Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
+echo "target_link_libraries(external_webrtc INTERFACE Xcomposite Xdamage Xext Xfixes Xrandr Xrender Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
+sed -i 's/DESKTOP_APP_USE_PACKAGED/NO_ONE_WILL_EVER_SET_THIS/' cmake/external/rlottie/CMakeLists.txt
 
-mkdir -p %{_builddir}/Libraries
-cp -rf tg_owt-%{commit0} %{_builddir}/Libraries/tg_owt
 
-tar -xf %{S:2} -C %{_builddir}/Libraries/tg_owt/src/third_party/libvpx/source/libvpx
-tar -xf %{S:3} -C %{_builddir}/Libraries/tg_owt/src/third_party/libyuv
-%patch -p1 -d %{_builddir}/Libraries/tg_owt
+sed -i "s|set(webrtc_build_loc.*|set(webrtc_build_loc %_libdir)|" cmake/external/webrtc/CMakeLists.txt
+# TODO: there are incorrec using and linking libyuv
+#sed -i "s|\(desktop-app::external_rnnoise\)|\1 -lyuv|" Telegram/cmake/lib_tgcalls.cmake
+    
 
-%build
-
-  # Static
-  pushd %{_builddir}/Libraries/tg_owt
-  mkdir -p out/Release
-  cmake -B out/Release -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_AR=%{_bindir}/gcc-ar \
-    -DCMAKE_RANLIB=%{_bindir}/gcc-ranlib \
-    -DCMAKE_NM=%{_bindir}/gcc-nm \
-    -DTG_OWT_SPECIAL_TARGET=linux \
-    -DTG_OWT_LIBJPEG_INCLUDE_PATH=/usr/include \
-    -DTG_OWT_OPENSSL_INCLUDE_PATH=/usr/include \
-    -DTG_OWT_OPUS_INCLUDE_PATH=/usr/include/opus \
-    -DTG_OWT_FFMPEG_INCLUDE_PATH=/usr/include/ffmpeg \
-    -DTG_OWT_PACKAGED_BUILD=TRUE
- 
-
-  %ninja_build -C out/Release -j2
-popd
 
 # Turns out we're allowed to use the official API key that telegram uses for their snap builds:
     # https://github.com/telegramdesktop/tdesktop/blob/8fab9167beb2407c1153930ed03a4badd0c2b59f/snap/snapcraft.yaml#L87-L88
     # Thanks @primeos!
+    
     mkdir -p build 
-    pushd build 
-    cmake  \
-        -DCMAKE_INSTALL_PREFIX=/usr \
+    cmake -B build  \
+    	-G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
         -DCMAKE_AR=%{_bindir}/gcc-ar \
         -DCMAKE_RANLIB=%{_bindir}/gcc-ranlib \
         -DCMAKE_NM=%{_bindir}/gcc-nm \
-        -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
         -DTDESKTOP_API_ID=611335 \
         -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c \
         -DTDESKTOP_LAUNCHER_BASENAME="telegramdesktop" \
         -DDESKTOP_APP_SPECIAL_TARGET="" \
-        -DDESKTOP_APP_USE_GLIBC_WRAPS=OFF \
-        -DDESKTOP_APP_QTWAYLANDCLIENT_PRIVATE_HEADERS=OFF \
-        -DDESKTOP_APP_USE_PACKAGED=ON \
-        -DDESKTOP_APP_USE_PACKAGED_FONTS=ON \
-        -DDESKTOP_APP_DISABLE_CRASH_REPORTS=ON \
         -Wno-dev \
-	-Wno-unknown-warning-option ..
-	popd
+	-Wno-unknown-warning-option 
+	
+	
+#         -DCMAKE_DISABLE_FIND_PACKAGE_rlottie=ON \
+#        -DCMAKE_DISABLE_FIND_PACKAGE_rnnoise=ON \	
 
-    %make_build -C build   -j2
+    %ninja_build -C build   -j2
 
 %install
-    %make_install -C build  -j2
+    %ninja_install -C build  -j2
 
 %check
 appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/%{launcher}.appdata.xml
@@ -201,6 +162,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_metainfodir}/%{launcher}.appdata.xml
 
 %changelog
+
+* Fri Jul 09 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 2.8.4-7
+- Updated to 2.8.4
 
 * Fri May 07 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 2.7.4-7
 - Updated to 2.7.4
