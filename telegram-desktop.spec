@@ -11,7 +11,7 @@
 
 
 Name: telegram-desktop
-Version: 2.8.4
+Version: 3.1.9
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -19,7 +19,7 @@ URL: https://github.com/telegramdesktop/%{appname}
 Summary: Telegram Desktop official messaging app
 Source0: https://github.com/telegramdesktop/tdesktop/releases/download/v%{version}/tdesktop-%{version}-full.tar.gz
 
-Patch2:	fix-gcc11-assert.patch
+#Patch2:	fix-gcc11-assert.patch
 ExclusiveArch: x86_64
 
 BuildRequires: cmake(Microsoft.GSL)
@@ -82,6 +82,13 @@ BuildRequires: pkgconfig(xtst)
 BuildRequires: pkgconfig(glibmm-2.4)
 BuildRequires: pkgconfig(webkit2gtk-4.0)
 BuildRequires: extra-cmake-modules
+BuildRequires: clang
+BuildRequires: range-v3-devel
+BuildRequires: expected-devel
+BuildRequires: gtk3-devel
+BuildRequires: webkit2gtk3-devel
+BuildRequires: libX11-devel
+BuildRequires: jemalloc-devel
 
 BuildRequires: yasm
 
@@ -107,7 +114,7 @@ business messaging needs.
 
 %prep
 %setup -n tdesktop-%{version}-full 
-%patch2 -p1 -d Telegram/lib_webview/
+#%patch2 -p1 -d Telegram/lib_webview/
 
 echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
 echo "find_package(X11 REQUIRED COMPONENTS Xcomposite Xdamage Xext Xfixes Xrender Xrandr Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
@@ -162,6 +169,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_metainfodir}/%{launcher}.appdata.xml
 
 %changelog
+
+* Tue Oct 19 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.1.9-7
+- Updated to 3.1.9
 
 * Fri Jul 09 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 2.8.4-7
 - Updated to 2.8.4
