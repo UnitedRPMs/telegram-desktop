@@ -11,7 +11,7 @@
 
 
 Name: telegram-desktop
-Version: 3.1.9
+Version: 3.2.2
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -19,7 +19,8 @@ URL: https://github.com/telegramdesktop/%{appname}
 Summary: Telegram Desktop official messaging app
 Source0: https://github.com/telegramdesktop/tdesktop/releases/download/v%{version}/tdesktop-%{version}-full.tar.gz
 
-#Patch2:	fix-gcc11-assert.patch
+Patch0: tdesktop-3.1.0-jemalloc-only-telegram.patch
+Patch1: tdesktop-3.1.0-fix-openssl3.patch
 ExclusiveArch: x86_64
 
 BuildRequires: cmake(Microsoft.GSL)
@@ -135,6 +136,10 @@ sed -i "s|set(webrtc_build_loc.*|set(webrtc_build_loc %_libdir)|" cmake/external
     mkdir -p build 
     cmake -B build  \
     	-G Ninja \
+    	-DDESKTOP_APP_QT6=OFF \
+    	%if 0%{?fedora} >= 34
+    	-DDESKTOP_APP_DISABLE_WAYLAND_INTEGRATION=ON \
+    	%endif
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DCMAKE_AR=%{_bindir}/gcc-ar \
@@ -169,6 +174,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_metainfodir}/%{launcher}.appdata.xml
 
 %changelog
+
+* Sat Nov 06 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.2.2-7
+- Updated to 3.2.2
 
 * Tue Oct 19 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.1.9-7
 - Updated to 3.1.9
