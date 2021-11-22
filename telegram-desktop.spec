@@ -11,7 +11,7 @@
 
 
 Name: telegram-desktop
-Version: 3.2.2
+Version: 3.2.5
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -174,6 +174,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_metainfodir}/%{launcher}.appdata.xml
 
 %changelog
+
+* Fri Nov 19 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.2.5-7
+- Updated to 3.2.5
 
 * Sat Nov 06 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.2.2-7
 - Updated to 3.2.2
