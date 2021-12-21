@@ -11,7 +11,7 @@
 
 
 Name: telegram-desktop
-Version: 3.2.5
+Version: 3.3.0
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -34,6 +34,7 @@ BuildRequires: cmake(Qt5XkbCommonSupport)
 BuildRequires: cmake(dbusmenu-qt5)
 BuildRequires: cmake(range-v3)
 BuildRequires: cmake(tl-expected)
+BuildRequires: cmake(absl)
 
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
@@ -82,6 +83,7 @@ BuildRequires: pkgconfig(x11)
 BuildRequires: pkgconfig(xtst)
 BuildRequires: pkgconfig(glibmm-2.4)
 BuildRequires: pkgconfig(webkit2gtk-4.0)
+BuildRequires: pkgconfig(tgvoip)
 BuildRequires: extra-cmake-modules
 BuildRequires: clang
 BuildRequires: range-v3-devel
@@ -90,8 +92,10 @@ BuildRequires: gtk3-devel
 BuildRequires: webkit2gtk3-devel
 BuildRequires: libX11-devel
 BuildRequires: jemalloc-devel
+BuildRequires: kwayland-server-devel
 
 BuildRequires: yasm
+BuildRequires: git
 
 Requires: hicolor-icon-theme
 Requires: open-sans-fonts
@@ -115,7 +119,7 @@ business messaging needs.
 
 %prep
 %setup -n tdesktop-%{version}-full 
-#%patch2 -p1 -d Telegram/lib_webview/
+#patch0 -p1 
 
 echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
 echo "find_package(X11 REQUIRED COMPONENTS Xcomposite Xdamage Xext Xfixes Xrender Xrandr Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
@@ -137,9 +141,6 @@ sed -i "s|set(webrtc_build_loc.*|set(webrtc_build_loc %_libdir)|" cmake/external
     cmake -B build  \
     	-G Ninja \
     	-DDESKTOP_APP_QT6=OFF \
-    	%if 0%{?fedora} >= 34
-    	-DDESKTOP_APP_DISABLE_WAYLAND_INTEGRATION=ON \
-    	%endif
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DCMAKE_AR=%{_bindir}/gcc-ar \
@@ -149,12 +150,17 @@ sed -i "s|set(webrtc_build_loc.*|set(webrtc_build_loc %_libdir)|" cmake/external
         -DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c \
         -DTDESKTOP_LAUNCHER_BASENAME="telegramdesktop" \
         -DDESKTOP_APP_SPECIAL_TARGET="" \
+        -DBUILD_SHARED_LIBS=ON \
         -Wno-dev \
 	-Wno-unknown-warning-option 
 	
-	
+#        -DDESKTOP_APP_DISABLE_WAYLAND_INTEGRATION=ON \	
 #         -DCMAKE_DISABLE_FIND_PACKAGE_rlottie=ON \
 #        -DCMAKE_DISABLE_FIND_PACKAGE_rnnoise=ON \	
+
+# if 0%{?fedora} >= 34
+#    	-DDESKTOP_APP_DISABLE_WAYLAND_INTEGRATION=ON \
+#    	endif
 
     %ninja_build -C build   -j2
 
@@ -162,7 +168,7 @@ sed -i "s|set(webrtc_build_loc.*|set(webrtc_build_loc %_libdir)|" cmake/external
     %ninja_install -C build  -j2
 
 %check
-appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/%{launcher}.appdata.xml
+appstream-util validate-relax --nonet %{buildroot}/%{_metainfodir}/telegramdesktop.metainfo.xml
 desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 
 %files
@@ -171,9 +177,12 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_bindir}/%{name}
 %{_datadir}/applications/%{launcher}.desktop
 %{_datadir}/icons/hicolor/*/apps/*.png
-%{_metainfodir}/%{launcher}.appdata.xml
+%{_metainfodir}/telegramdesktop.metainfo.xml
 
 %changelog
+
+* Wed Dec 15 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.3.0-7
+- Updated to 3.3.0
 
 * Fri Nov 19 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.2.5-7
 - Updated to 3.2.5
