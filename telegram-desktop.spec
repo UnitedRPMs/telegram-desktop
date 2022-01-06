@@ -11,7 +11,7 @@
 
 
 Name: telegram-desktop
-Version: 3.3.0
+Version: 3.4.3
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -34,7 +34,9 @@ BuildRequires: cmake(Qt5XkbCommonSupport)
 BuildRequires: cmake(dbusmenu-qt5)
 BuildRequires: cmake(range-v3)
 BuildRequires: cmake(tl-expected)
+%if 0%{?fedora} >= 34
 BuildRequires: cmake(absl)
+%endif
 
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
@@ -153,7 +155,6 @@ sed -i "s|set(webrtc_build_loc.*|set(webrtc_build_loc %_libdir)|" cmake/external
         -DBUILD_SHARED_LIBS=ON \
         -Wno-dev \
 	-Wno-unknown-warning-option 
-	
 #        -DDESKTOP_APP_DISABLE_WAYLAND_INTEGRATION=ON \	
 #         -DCMAKE_DISABLE_FIND_PACKAGE_rlottie=ON \
 #        -DCMAKE_DISABLE_FIND_PACKAGE_rnnoise=ON \	
@@ -180,6 +181,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_metainfodir}/telegramdesktop.metainfo.xml
 
 %changelog
+
+* Wed Jan 05 2022 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.4.3-7
+- Updated to 3.4.3
 
 * Wed Dec 15 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.3.0-7
 - Updated to 3.3.0
