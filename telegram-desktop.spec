@@ -11,7 +11,7 @@
 
 
 Name: telegram-desktop
-Version: 3.4.3
+Version: 3.5.2
 Release: 7%{?dist}
 
 License: GPLv3+ and LGPLv2+ and LGPLv3
@@ -19,24 +19,34 @@ URL: https://github.com/telegramdesktop/%{appname}
 Summary: Telegram Desktop official messaging app
 Source0: https://github.com/telegramdesktop/tdesktop/releases/download/v%{version}/tdesktop-%{version}-full.tar.gz
 
-Patch0: tdesktop-3.1.0-jemalloc-only-telegram.patch
-Patch1: tdesktop-3.1.0-fix-openssl3.patch
+Patch0: desktop.patch
+
 ExclusiveArch: x86_64
 
-BuildRequires: cmake(Microsoft.GSL)
+BuildRequires: cmake(Qt6Core)
+BuildRequires: cmake(Qt6Core5Compat)
+BuildRequires: cmake(Qt6DBus)
+BuildRequires: cmake(Qt6Gui)
+BuildRequires: cmake(Qt6Network)
+BuildRequires: cmake(Qt6OpenGL)
+BuildRequires: cmake(Qt6OpenGLWidgets)
+BuildRequires: cmake(Qt6Svg)
+BuildRequires: cmake(Qt6Widgets)
+BuildRequires: cmake(Qt6WaylandClient)
 BuildRequires: cmake(OpenAL)
-BuildRequires: cmake(Qt5Core)
-BuildRequires: cmake(Qt5DBus)
-BuildRequires: cmake(Qt5Gui)
-BuildRequires: cmake(Qt5Network)
-BuildRequires: cmake(Qt5Widgets)
-BuildRequires: cmake(Qt5XkbCommonSupport)
-BuildRequires: cmake(dbusmenu-qt5)
-BuildRequires: cmake(range-v3)
+BuildRequires: cmake(PlasmaWaylandProtocols)
+BuildRequires: cmake(Qt6Concurrent)
+BuildRequires: cmake(Qt6WaylandClient)
+BuildRequires: cmake(Microsoft.GSL)
 BuildRequires: cmake(tl-expected)
-%if 0%{?fedora} >= 34
-BuildRequires: cmake(absl)
-%endif
+BuildRequires: cmake(Qt6Concurrent)
+BuildRequires: cmake(Qt6WaylandClient)
+BuildRequires: pkgconfig(wayland-protocols)
+BuildRequires: qt6-qtbase-static
+BuildRequires: qt6-qtbase-private-devel
+#if 0%{?fedora} >= 34
+#BuildRequires: cmake(absl)
+#endif
 
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
@@ -56,6 +66,7 @@ BuildRequires: pkgconfig(opus)
 BuildRequires: pkgconfig(gtk+-3.0)
 
 BuildRequires: cmake
+BuildRequires: meson
 BuildRequires: desktop-file-utils
 BuildRequires: gcc
 BuildRequires: gcc-c++
@@ -66,19 +77,14 @@ BuildRequires: libstdc++-devel
 BuildRequires: minizip-compat-devel
 BuildRequires: ninja-build
 BuildRequires: python3
-BuildRequires: qt5-qtbase-private-devel
-BuildRequires: qt5-qtwayland-devel
-BuildRequires: pkgconfig(Qt5Svg)
-BuildRequires: qt5-qtbase-static
 BuildRequires: libjpeg-turbo-devel 
-BuildRequires: kf5-kwayland-devel
-BuildRequires: tg_owt-devel
+BuildRequires: tg_owt-devel tg_owt-static
 BuildRequires: xcb-util-keysyms-devel
 BuildRequires: pipewire-devel
 BuildRequires: rlottie-devel
 BuildRequires: rnnoise-devel
 BuildRequires: pkgconfig(alsa)
-BuildRequires: ffmpeg-devel
+BuildRequires: ffmpeg4-devel
 BuildRequires: pkgconfig(libpulse)
 BuildRequires: pkgconfig(protobuf)
 BuildRequires: pkgconfig(x11)
@@ -87,7 +93,7 @@ BuildRequires: pkgconfig(glibmm-2.4)
 BuildRequires: pkgconfig(webkit2gtk-4.0)
 BuildRequires: pkgconfig(tgvoip)
 BuildRequires: extra-cmake-modules
-BuildRequires: clang
+#BuildRequires: clang
 BuildRequires: range-v3-devel
 BuildRequires: expected-devel
 BuildRequires: gtk3-devel
@@ -95,6 +101,7 @@ BuildRequires: webkit2gtk3-devel
 BuildRequires: libX11-devel
 BuildRequires: jemalloc-devel
 BuildRequires: kwayland-server-devel
+BuildRequires: abseil-cpp-devel
 
 BuildRequires: yasm
 BuildRequires: git
@@ -120,8 +127,7 @@ like SMS and email combined — and can take care of all your personal or
 business messaging needs.
 
 %prep
-%setup -n tdesktop-%{version}-full 
-#patch0 -p1 
+%autosetup -n tdesktop-%{version}-full -p 1 
 
 echo "target_link_libraries(external_webrtc INTERFACE jpeg)" | tee -a cmake/external/webrtc/CMakeLists.txt
 echo "find_package(X11 REQUIRED COMPONENTS Xcomposite Xdamage Xext Xfixes Xrender Xrandr Xtst)" | tee -a cmake/external/webrtc/CMakeLists.txt
@@ -139,10 +145,12 @@ sed -i "s|set(webrtc_build_loc.*|set(webrtc_build_loc %_libdir)|" cmake/external
     # https://github.com/telegramdesktop/tdesktop/blob/8fab9167beb2407c1153930ed03a4badd0c2b59f/snap/snapcraft.yaml#L87-L88
     # Thanks @primeos!
     
+    export CXXFLAGS+=" -Wp,-U_GLIBCXX_ASSERTIONS"
+    
     mkdir -p build 
     cmake -B build  \
     	-G Ninja \
-    	-DDESKTOP_APP_QT6=OFF \
+    	-DDESKTOP_APP_QT6=ON \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DCMAKE_AR=%{_bindir}/gcc-ar \
@@ -181,6 +189,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/%{launcher}.desktop
 %{_metainfodir}/telegramdesktop.metainfo.xml
 
 %changelog
+
+* Fri Feb 11 2022 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.5.2-7
+- Updated to 3.5.2
 
 * Wed Jan 05 2022 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 3.4.3-7
 - Updated to 3.4.3
