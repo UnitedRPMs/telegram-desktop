@@ -52,10 +52,6 @@ BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(gobject-2.0)
 BuildRequires: pkgconfig(hunspell)
-BuildRequires: pkgconfig(libavcodec)
-BuildRequires: pkgconfig(libavformat)
-BuildRequires: pkgconfig(libavresample)
-BuildRequires: pkgconfig(libavutil)
 BuildRequires: pkgconfig(libcrypto)
 BuildRequires: pkgconfig(liblz4)
 BuildRequires: pkgconfig(liblzma)
@@ -102,6 +98,9 @@ BuildRequires: libX11-devel
 BuildRequires: jemalloc-devel
 BuildRequires: kwayland-server-devel
 BuildRequires: abseil-cpp-devel
+BuildRequires: openh264-devel
+BuildRequires: usrsctp-devel
+BuildRequires: libvpx-devel
 
 BuildRequires: yasm
 BuildRequires: git
